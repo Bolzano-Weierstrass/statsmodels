@@ -39,6 +39,15 @@ class zipoisson_gen(rv_discrete):
     def _pmf(self, x, mu, w):
         return np.exp(self._logpmf(x, mu, w))
 
+    def _rvs(self, mu, w):
+        pass  # TODO
+
+    def _cdf(self, x, mu, w):
+        pass  # TODO
+
+    def _pff(self, x, mu, w):
+        pass  # TODO
+
 zipoisson = zipoisson_gen(name='zipoisson',
                           longname='Zero Inflated Poisson')
 
