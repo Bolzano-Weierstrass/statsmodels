@@ -1,6 +1,6 @@
 import numpy as np
-from scipy.stats import rv_discrete, nbinom
-from scipy.special import gammaln
+from scipy.stats import rv_discrete, nbinom, poisson
+from scipy.special import gammaln, pdtr, pdtrik
 from statsmodels.compat.scipy import _lazywhere
 
 
@@ -46,10 +46,16 @@ class zipoisson_gen(rv_discrete):
         return zero_inflated_sampling * distibution_sampling
 
     def _cdf(self, x, mu, w):
-        pass  # TODO
+        # construct cdf from standard poisson's cdf and the w inflation of zero
+        return w + poisson(mu=mu).cdf(x) * (1 - w)
 
-    def _pff(self, x, mu, w):
-        pass  # TODO
+    def _pff(self, q, mu, w):
+        # we just translated and stretched q to remove zi
+        q_mod = (q - w) / (1 - w)
+        x = poisson(mu=mu).ppf(q_mod)
+        # set to zero if in the zi range
+        x[q < w] = 0
+        return x
 
 zipoisson = zipoisson_gen(name='zipoisson',
                           longname='Zero Inflated Poisson')

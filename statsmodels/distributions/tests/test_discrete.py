@@ -46,6 +46,16 @@ class TestZIPoisson(object):
         zipoisson_logpmf = sm.distributions.zipoisson.logpmf(5, 1, 0)
         assert_allclose(poisson_logpmf, zipoisson_logpmf, rtol=1e-12)
 
+    def test_cdf_zero(self):
+        poisson_cdf = poisson.cdf(3, 2)
+        zipoisson_cdf = sm.distributions.zipoisson.cdf(3, 2, 0)
+        assert_allclose(poisson_cdf, zipoisson_cdf, rtol=1e-12)
+
+    def test_ppf_zero(self):
+        poisson_ppf = poisson.ppf(5, 1)
+        zipoisson_ppf = sm.distributions.zipoisson.ppf(5, 1, 0)
+        assert_allclose(poisson_ppf, zipoisson_ppf, rtol=1e-12)
+
     def test_pmf(self):
         poisson_pmf = poisson.pmf(2, 2)
         zipoisson_pmf = sm.distributions.zipoisson.pmf(2, 2, 0.1)
