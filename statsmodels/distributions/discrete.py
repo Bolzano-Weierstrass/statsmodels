@@ -96,10 +96,31 @@ class zinegativebinomial_gen(rv_discrete):
     def _pmf(self, x, mu, alpha, p, w):
         return np.exp(self._logpmf(x, mu, alpha, p, w))
 
+    def _rvs(self, x, mu, alpha, p, w):
+        s, p = self.convert_params(mu, alpha, p)
+        # mixing a Bernouilli(1-w) and a Negative Binomial (mu)
+        zero_inflated_sampling = np.random.binomial(1, 1 - w, size=self._size)
+        distibution_sampling = np.random.negative_binomial(s, p, size=self._size)
+        return zero_inflated_sampling * distibution_sampling
+
+    def _cdf(self, x, mu, alpha, p, w):
+        s, p = self.convert_params(mu, alpha, p)
+        # construct cdf from standard negative binomial cdf and the w inflation of zero
+        return w + nbinom.cdf(x, s, p) * (1 - w)
+
+    def _pff(self, q, mu, alpha, p, w):
+        s, p = self.convert_params(mu, alpha, p)
+        # we just translated and stretched q to remove zi
+        q_mod = (q - w) / (1 - w)
+        x = nbinom.ppf(q_mod, s, p)
+        # set to zero if in the zi range
+        x[q < w] = 0
+        return x
+
     def convert_params(self, mu, alpha, p):
         size = 1. / alpha * mu**(2-p)
         prob = size / (size + mu)
-        return (size, prob)
+        return size, prob
 
 zinegbin = zinegativebinomial_gen(name='zinegbin',
     longname='Zero Inflated Generalized Negative Binomial')
