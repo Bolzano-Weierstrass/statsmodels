@@ -40,7 +40,10 @@ class zipoisson_gen(rv_discrete):
         return np.exp(self._logpmf(x, mu, w))
 
     def _rvs(self, mu, w):
-        pass  # TODO
+        # mixing a Bernouilli(1-w) and a Poisson(mu)
+        zero_inflated_sampling = np.random.binomial(1, 1 - w, size=self._size)
+        distibution_sampling = np.random.poisson(mu, size=self._size)
+        return zero_inflated_sampling * distibution_sampling
 
     def _cdf(self, x, mu, w):
         pass  # TODO
