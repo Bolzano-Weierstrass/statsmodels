@@ -96,7 +96,7 @@ class zinegativebinomial_gen(rv_discrete):
     def _pmf(self, x, mu, alpha, p, w):
         return np.exp(self._logpmf(x, mu, alpha, p, w))
 
-    def _rvs(self, x, mu, alpha, p, w):
+    def _rvs(self, mu, alpha, p, w):
         s, p = self.convert_params(mu, alpha, p)
         # mixing a Bernouilli(1-w) and a Negative Binomial (mu)
         zero_inflated_sampling = np.random.binomial(1, 1 - w, size=self._size)
