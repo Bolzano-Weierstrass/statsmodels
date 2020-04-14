@@ -772,6 +772,11 @@ class ZeroInflatedPoissonResults(CountResults):
         """
         raise NotImplementedError("not yet implemented for zero inflation")
 
+    def predict(self, exog=None, transform=True, *args, **kwargs):
+        if 'conf_int' in kwargs:
+            kwargs['cov_params'] = self.cov_params()
+        return super(ZeroInflatedPoissonResults, self).predict(exog=exog, transform=transform, *args, **kwargs)
+
 
 class L1ZeroInflatedPoissonResults(L1CountResults, ZeroInflatedPoissonResults):
     pass
@@ -809,6 +814,11 @@ class ZeroInflatedGeneralizedPoissonResults(CountResults):
         Not yet implemented for Zero Inflated Models
         """
         raise NotImplementedError("not yet implemented for zero inflation")
+
+    def predict(self, exog=None, transform=True, *args, **kwargs):
+        if 'conf_int' in kwargs:
+            kwargs['cov_params'] = self.cov_params()
+        return super(ZeroInflatedGeneralizedPoissonResults, self).predict(exog=exog, transform=transform, *args, **kwargs)
 
 
 class L1ZeroInflatedGeneralizedPoissonResults(L1CountResults,
@@ -851,6 +861,10 @@ class ZeroInflatedNegativeBinomialResults(CountResults):
         """
         raise NotImplementedError("not yet implemented for zero inflation")
 
+    def predict(self, exog=None, transform=True, *args, **kwargs):
+        if 'conf_int' in kwargs:
+            kwargs['cov_params'] = self.cov_params()
+        return super(ZeroInflatedNegativeBinomialResults, self).predict(exog=exog, transform=transform, *args, **kwargs)
 
 class L1ZeroInflatedNegativeBinomialResults(L1CountResults,
         ZeroInflatedNegativeBinomialResults):
