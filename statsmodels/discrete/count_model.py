@@ -385,6 +385,14 @@ class GenericZeroInflated(CountModel):
             Define values that will be predicted.
             'mean', 'mean-main', 'linear', 'mean-nonzero', 'prob-zero, 'prob', 'prob-main'
             Default is 'mean'.
+        conf_int : bool, optional
+            If confidence intervals are given around prediction.
+            Only supported for which in {mean, mean-main, prob-main}
+        cov_params : ndarray, optional
+            Covariance of params.
+        alpha : float, optional
+            The significance level for the confidence interval.
+            ie., The default `alpha` = .05 returns a 95% confidence interval.
 
         Notes
         -----
@@ -774,6 +782,7 @@ class ZeroInflatedPoissonResults(CountResults):
 
     def predict(self, exog=None, transform=True, *args, **kwargs):
         if 'conf_int' in kwargs:
+            # add cov_params to the kwargs of predict
             kwargs['cov_params'] = self.cov_params()
         return super(ZeroInflatedPoissonResults, self).predict(exog=exog, transform=transform, *args, **kwargs)
 
