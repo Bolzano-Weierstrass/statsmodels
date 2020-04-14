@@ -3,6 +3,7 @@ __all__ = ["ZeroInflatedPoisson", "ZeroInflatedGeneralizedPoisson",
 
 import warnings
 import numpy as np
+from scipy.stats import norm
 import statsmodels.base.model as base
 import statsmodels.base.wrapper as wrap
 import statsmodels.regression.linear_model as lm
@@ -18,6 +19,7 @@ from statsmodels.tools.numdiff import approx_fprime, approx_hess
 from statsmodels.tools.decorators import cache_readonly
 from statsmodels.tools.sm_exceptions import ConvergenceWarning
 from statsmodels.compat.pandas import Appender
+from statsmodels.genmod.families.links import logit, probit
 
 
 _doc_zi_params = """
@@ -359,7 +361,7 @@ class GenericZeroInflated(CountModel):
         return hess_arr
 
     def predict(self, params, exog=None, exog_infl=None, exposure=None,
-                offset=None, which='mean'):
+                offset=None, which='mean', conf_int=False, cov_params=None, alpha=0.05):
         """
         Predict response variable of a count model given exogenous variables.
 
@@ -435,8 +437,12 @@ class GenericZeroInflated(CountModel):
 
         prob_zero = (1 - prob_main) + prob_main * np.exp(llf)
 
-        if which == 'mean':
-            return prob_main * np.exp(lin_pred)
+        if conf_int & (which in {'mean', 'mean-main', 'prob-main'}):
+            return self._conf_int(which=which, params_infl=params_infl,
+                                  lin_pred=lin_pred, exog=exog, exog_infl=exog_infl,
+                                  cov_params=cov_params, alpha=alpha)
+        elif which == 'mean':
+                return prob_main * np.exp(lin_pred)
         elif which == 'mean-main':
             return np.exp(lin_pred)
         elif which == 'linear':
@@ -452,6 +458,56 @@ class GenericZeroInflated(CountModel):
         else:
             raise ValueError('which = %s is not available' % which)
 
+    def _conf_int(self, which, params_infl, lin_pred, exog, exog_infl, cov_params, alpha):
+
+        if self.inflation == 'probit':
+            infl_link = probit()
+        else:
+            infl_link = logit()
+
+        # estimated values
+        prob_main = 1 - infl_link.inverse(exog_infl.dot(params_infl.T))
+        mean_main = np.exp(lin_pred)
+        mean = prob_main * mean_main
+        cov_params = cov_params[:exog_infl.shape[1] + exog.shape[1], :exog_infl.shape[1] + exog.shape[1]]
+
+        q = norm.ppf(1 - alpha / 2.)
+
+        # se of the mean-main with endpoint method
+        if which == 'mean-main':
+            cov_main = cov_params[exog_infl.shape[1]:, exog_infl.shape[1]:]
+            se = np.sqrt((exog * np.dot(cov_main, exog.T).T).sum(1))
+
+            estimated = mean_main
+            lower = np.exp(lin_pred - q * se)
+            upper = np.exp(lin_pred + q * se)
+
+        # se of the prob-main with endpoint method
+        elif which == 'prob-main':
+            cov_infl = cov_params[:exog_infl.shape[1], :exog_infl.shape[1]]
+            se = np.sqrt((exog_infl * np.dot(cov_infl, exog_infl.T).T).sum(1))
+
+            estimated = prob_main
+            lower = 1 - infl_link.inverse(exog_infl.dot(params_infl) + q * se)
+            upper = 1 - infl_link.inverse(exog_infl.dot(params_infl) - q * se)
+
+        # se of the mean with delta method
+        elif which == 'mean':
+            # gradient computations are divided whether the param is infl or main
+            grad_main = prob_main * np.exp(lin_pred)
+            grad_main = exog * grad_main[:, np.newaxis]
+            grad_infl = - infl_link.inverse_deriv(exog_infl.dot(params_infl.T)) * np.exp(lin_pred)
+            grad_infl = exog_infl * grad_infl[:, np.newaxis]
+
+            grad = np.concatenate([grad_infl, grad_main], axis=1)
+            se = np.sqrt((grad * np.dot(cov_params, grad.T).T).sum(1))
+
+            estimated = mean
+            lower = mean - q * se
+            upper = mean + q * se
+
+        ci = np.column_stack((estimated, lower, upper))
+        return ci
 
 class ZeroInflatedPoisson(GenericZeroInflated):
     __doc__ = """
